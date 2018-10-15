@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 # Echo client program
-import socket, sys, re
+import socket, sys, re, time
 
 import params
 from framedSock import FramedStreamSock
@@ -62,14 +62,33 @@ class ClientThread(Thread):
            sys.exit(1)
 
        fs = FramedStreamSock(s, debug=debug)
+       cmd = input('ftp$ ')
+       para = cmd.split()
+       #para = ('put', 'whygrep')
+       if (len(para) == 2 and para[0] == 'put'):#check if put in filename
+           try:
+               print('atpara1')
+               print(para[1])
+               file = open(para[1], 'rb')
 
+           except:
+               print('file not found')
+               exit(0)
+           filenam = './' + para[1]  # send filename
+           fs.sendmsg(filenam.encode())
+           print("received:", fs.receivemsg())
+           while True:  # read file
 
-       print("sending hello world")
-       fs.sendmsg(b"hello world")
-       print("received:", fs.receivemsg())
-
-       fs.sendmsg(b"hello world")
-       print("received:", fs.receivemsg())
+               data = file.read(100)  # .encode()
+               print(data)
+               if not data:  # end of file
+                   fs.sendmsg(b"~")
+                   print("received:", fs.receivemsg())
+                   return
+               fs.sendmsg(data)#.encode())  # send file by 100 byte increments
+               print("received:", fs.receivemsg())
+       else:
+           print('no command or missing parameter')
 
 for i in range(1):
     ClientThread(serverHost, serverPort, debug)
